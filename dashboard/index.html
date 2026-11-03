@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>U.S. Housing Market Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one scanning column — KPI strip, metro explorer, then paired panels. */
+:root {
+  --bg: #f5f6f4; --panel: #ffffff; --line: #e1e4df; --ink: #151a16; --ink-2: #545c55; --ink-3: #7b847c;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --soft: #9ec5f4;
+  --pos: #0a7d0a; --neg: #c2410c;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#121513; --panel:#1a1e1b; --line:#2c322d; --ink:#eef1ee; --ink-2:#b5bdb6; --ink-3:#8a938b;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --soft:#1c5cab; --pos:#4cc24c; --neg:#f08a5d; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg:#121513; --panel:#1a1e1b; --line:#2c322d; --ink:#eef1ee; --ink-2:#b5bdb6; --ink-3:#8a938b;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --soft:#1c5cab; --pos:#4cc24c; --neg:#f08a5d; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px; }
+.eyebrow { font: 600 12px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+h1 { font: 800 clamp(24px, 4vw, 34px)/1.1 var(--font-display); margin: 6px 0 0; text-wrap: balance; }
+.meta { color: var(--ink-2); font-size: 14px; max-width: 52ch; margin: 0; }
+.meta a { color: var(--s1); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.kpi { background: var(--panel); padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.kpi .label { font-size: 13px; color: var(--ink-2); }
+.kpi .value { font: 700 24px/1.15 var(--font-display); font-variant-numeric: tabular-nums; }
+.kpi .note { font-size: 12.5px; color: var(--ink-3); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 14px; min-width: 0; display: grid; gap: 10px; align-content: start; }
+.panel h2 { font: 700 16px/1.3 var(--font-display); margin: 0; text-wrap: balance; }
+.sub { font-size: 13px; color: var(--ink-2); margin: -6px 0 0; }
+.foot { font-size: 12.5px; color: var(--ink-3); margin: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.chart { position: relative; height: 280px; }
+.chart.tall { height: 360px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.controls input, .controls select { font: 15px var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; min-width: 0; }
+.controls input { width: min(260px, 100%); }
+button.chipbtn { font: 600 13px var(--font-body); border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 10px 4px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+button.chipbtn .dot { width: 10px; height: 10px; border-radius: 50%; }
+button.chipbtn:hover .x { color: var(--neg); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.card { border: 1px solid var(--line); border-left: 4px solid var(--c, var(--s1)); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; }
+.card h3 { margin: 0; font: 700 15px var(--font-display); }
+.card dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13.5px; }
+.card dt { color: var(--ink-2); }
+.card dd { margin: 0; text-align: right; font-family: var(--font-data); font-size: 13px; font-variant-numeric: tabular-nums; }
+.pos { color: var(--pos); } .neg { color: var(--neg); }
+.tablewrap { overflow-x: auto; }
+table.wrapfirst td:first-child { white-space: normal; min-width: 140px; }
+.tablewrap.scroll { max-height: 520px; overflow-y: auto; }
+.tablewrap.scroll thead th { position: sticky; top: 0; background: var(--panel); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { font: 600 12px/1.2 var(--font-body); color: var(--ink-2); text-transform: uppercase; letter-spacing: .05em; }
+td { font-family: var(--font-data); font-size: 13px; font-variant-numeric: tabular-nums; }
+td:first-child { font-family: var(--font-body); font-size: 14px; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.notes { font-size: 13.5px; color: var(--ink-2); }
+.notes p { margin: 0 0 6px; max-width: 95ch; }
+.notes a { color: var(--s1); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Zillow Home Value Index · U.S. metro areas</div>
+      <h1>U.S. Housing Market Dynamics</h1>
+    </div>
+    <p class="meta" id="period">Typical home values for every U.S. metro in the Zillow data. Part of a graduate research project at Iowa State University. <a href="https://github.com/codeind/US-Housing-Market-Dynamics">View the project on GitHub</a></p>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Headline numbers"></section>
+
+  <section class="panel">
+    <h2>Metro explorer</h2>
+    <p class="sub">Typical home value by month. Add up to four metros to compare; the dashed line is the median of all metros.</p>
+    <div class="controls">
+      <label for="metro-input" class="sub" style="margin:0">Add a metro</label>
+      <input id="metro-input" list="metro-list" placeholder="Type a city, e.g. Boise" autocomplete="off">
+      <datalist id="metro-list"></datalist>
+      <div id="chips" class="controls"></div>
+    </div>
+    <div class="chart tall"><canvas id="c-explorer" aria-label="Home value history for selected metros"></canvas></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="controls" style="justify-content:space-between">
+        <h2>Post-COVID price growth</h2>
+        <select id="state-filter" aria-label="Filter by state"></select>
+      </div>
+      <p class="sub" id="covid-sub">Change in typical home value, March 2020 to the latest month</p>
+      <div class="chart tall"><canvas id="c-covid" aria-label="Post-COVID growth ranking"></canvas></div>
+    </section>
+    <section class="panel">
+      <h2>Seasonality</h2>
+      <p class="sub">How far home values sit above or below their yearly trend, by calendar month, averaged across all metros and years</p>
+      <div class="chart tall"><canvas id="c-season" aria-label="Seasonal pattern by month"></canvas></div>
+      <p class="foot">Values run above trend from May to September and below it in winter.</p>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section class="panel">
+      <h2>Market clusters</h2>
+      <p class="sub">K-Means groups from the project's notebook, plotted by post-COVID growth and price volatility. Each dot is a metro.</p>
+      <div class="chart tall"><canvas id="c-clusters" aria-label="Metro clusters by growth and volatility"></canvas></div>
+      <div class="tablewrap"><table id="t-clusters" class="wrapfirst"></table></div>
+      <p class="foot">Medians per cluster. Growth is March 2020 to the latest month; volatility and average value cover the whole period.</p>
+    </section>
+    <section class="panel">
+      <h2>Median home value by state</h2>
+      <p class="sub" id="state-sub"></p>
+      <div class="tablewrap scroll" tabindex="0" aria-label="States table, scrollable"><table id="t-states"></table></div>
+    </section>
+  </div>
+
+  <section class="panel notes">
+    <h2>About the data</h2>
+    <p><b>Source:</b> Zillow Home Value Index (ZHVI) for all homes, middle price tier, smoothed and seasonally adjusted, by metro area. Data provided by <a href="https://www.zillow.com/research/data/">Zillow Group</a>.</p>
+    <p><b>Post-COVID growth</b> compares March 2020 with the latest month in the data. <b>10-year CAGR</b> is the compound annual growth over the last ten years. <b>Volatility</b> is the standard deviation of a metro's monthly values over the whole period.</p>
+    <p>The figures in the research report use data through January 2024; this dashboard uses the full file, so its numbers can differ slightly from the report.</p>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="dashboard_data.js"></script>
+<script>
+(function () {
+  const H = window.HOUSING;
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const money = v => v == null ? "–" : "$" + Math.round(v).toLocaleString("en-US");
+  const kmoney = v => v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : "$" + Math.round(v / 1e3) + "K";
+  const pct = (v, d = 1) => v == null ? "–" : (v > 0 ? "+" : "") + v.toFixed(d) + "%";
+  const cls = v => v == null ? "" : v >= 0 ? "pos" : "neg";
+  const byName = new Map(H.metros.map(m => [m.n, m]));
+  const monthLabel = s => { const [y, m] = s.split("-"); return new Date(+y, +m - 1, 1).toLocaleString("en-US", { month: "short", year: "numeric" }); };
+  const seriesColors = ["--s1", "--s2", "--s3", "--s4"];
+  const clusterInfo = [
+    { name: "Smaller, lower-priced metros", shape: "circle" },
+    { name: "Larger, mid-priced metros", shape: "triangle" },
+    { name: "Slow growth, stable", shape: "rect" },
+    { name: "High-priced, volatile", shape: "rectRot" },
+  ];
+
+  // KPIs
+  const top = H.metros.filter(m => m.covid != null).sort((a, b) => b.covid - a.covid)[0];
+  document.getElementById("kpis").innerHTML = [
+    ["Metro areas", H.summary.metros.toLocaleString(), "in the Zillow data"],
+    ["Period", "Jan 2000 – " + H.latest, "monthly values"],
+    ["Median home value", money(H.summary.median_latest), "across metros, " + H.latest],
+    ["Median post-COVID growth", pct(H.summary.median_covid), "Mar 2020 → " + H.latest],
+    ["Fastest post-COVID growth", top.n, pct(top.covid) + " since Mar 2020"],
+  ].map(([l, v, n]) => `<div class="kpi"><span class="label">${l}</span><span class="value">${v}</span><span class="note">${n}</span></div>`).join("");
+
+  // explorer
+  document.getElementById("metro-list").innerHTML = H.metros.map(m => `<option value="${m.n}">`).join("");
+  let selected = ["Austin, TX", "Des Moines, IA"];
+  const input = document.getElementById("metro-input");
+  input.addEventListener("change", () => {
+    const m = byName.get(input.value.trim());
+    if (m && !selected.includes(m.n)) { selected = [...selected, m.n].slice(-4); drawExplorer(); }
+    input.value = "";
+  });
+
+  const charts = {};
+  function base(extra) {
+    return Object.assign({
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: css("--ink"), titleColor: css("--panel"), bodyColor: css("--panel"), padding: 8 } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: css("--ink-2"), maxRotation: 0, autoSkipPadding: 14 }, border: { color: css("--line") } },
+        y: { grid: { color: css("--line") }, ticks: { color: css("--ink-2") }, border: { display: false } },
+      },
+    }, extra || {});
+  }
+  function put(id, cfg) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), cfg); }
+
+  function drawExplorer() {
+    document.getElementById("chips").innerHTML = selected.map((n, i) =>
+      `<button type="button" class="chipbtn" data-n="${n}" aria-label="Remove ${n}"><span class="dot" style="background:var(${seriesColors[i]})"></span>${n}<span class="x" aria-hidden="true">×</span></button>`).join("");
+    document.querySelectorAll("#chips button").forEach(b => b.addEventListener("click", () => { selected = selected.filter(n => n !== b.dataset.n); drawExplorer(); }));
+    const labels = H.dates.map(monthLabel);
+    const ds = selected.map((n, i) => {
+      const m = byName.get(n), arr = new Array(m.o).fill(null).concat(m.v);
+      return { label: n, data: arr, borderColor: css(seriesColors[i]), backgroundColor: css(seriesColors[i]), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.2, spanGaps: true };
+    });
+    ds.push({ label: "Median of all metros", data: H.national, borderColor: css("--ink-3"), borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 3 });
+    const o = base({ interaction: { mode: "index", intersect: false }, layout: { padding: { right: 14 } } });
+    o.plugins.legend = { display: true, position: "top", align: "start", labels: { color: css("--ink-2"), boxWidth: 14, boxHeight: 2 } };
+    o.plugins.tooltip.callbacks = { label: c => `${c.dataset.label}: ${money(c.parsed.y)}` };
+    o.scales.y.ticks.callback = v => kmoney(v);
+    o.scales.x.ticks.callback = function (v) { const l = this.getLabelForValue(v); return l.startsWith("Jan") ? l.slice(4) : ""; };
+    o.scales.x.ticks.autoSkip = false;
+    put("c-explorer", { type: "line", data: { labels, datasets: ds }, options: o });
+    document.getElementById("cards").innerHTML = selected.map((n, i) => {
+      const m = byName.get(n);
+      return `<div class="card" style="--c:var(${seriesColors[i]})"><h3>${n}</h3><dl>
+        <dt>Typical value, ${H.latest}</dt><dd>${money(m.latest)}</dd>
+        <dt>Past 12 months</dt><dd class="${cls(m.yoy)}">${pct(m.yoy)}</dd>
+        <dt>10-year CAGR</dt><dd>${pct(m.cagr10, 2)}</dd>
+        <dt>Since March 2020</dt><dd class="${cls(m.covid)}">${pct(m.covid)}</dd>
+        <dt>Market cluster</dt><dd>${m.c == null ? "–" : clusterInfo[m.c].name}</dd></dl></div>`;
+    }).join("");
+  }
+
+  // post-COVID ranking
+  const stateSel = document.getElementById("state-filter");
+  const stateCodes = [...new Set(H.metros.map(m => m.s))].sort();
+  stateSel.innerHTML = `<option value="">All states</option>` + stateCodes.map(s => `<option>${s}</option>`).join("");
+  stateSel.addEventListener("change", drawCovid);
+  function drawCovid() {
+    const st = stateSel.value;
+    const rows = H.metros.filter(m => m.covid != null && (!st || m.s === st)).sort((a, b) => b.covid - a.covid).slice(0, 15);
+    document.getElementById("covid-sub").textContent = st
+      ? `Top ${rows.length} metros in ${st}, March 2020 to ${H.latest}`
+      : `Top 15 of ${H.summary.metros_with_covid} metros, March 2020 to ${H.latest}`;
+    const o = base({ indexAxis: "y" });
+    o.scales.x.grid = { color: css("--line") }; o.scales.y.grid = { display: false };
+    o.scales.x.ticks.callback = v => v + "%";
+    o.plugins.tooltip.callbacks = { label: c => `${pct(c.parsed.x)} · now ${money(rows[c.dataIndex].latest)}` };
+    put("c-covid", { type: "bar", data: { labels: rows.map(m => m.n), datasets: [{ data: rows.map(m => m.covid), backgroundColor: css("--s1"), borderRadius: { topRight: 4, bottomRight: 4 }, maxBarThickness: 16 }] }, options: o });
+  }
+
+  // seasonality
+  function drawSeason() {
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const o = base();
+    o.scales.y.ticks.callback = v => v.toFixed(2) + "%";
+    o.plugins.tooltip.callbacks = { label: c => `${c.parsed.y > 0 ? "+" : ""}${c.parsed.y.toFixed(3)}% vs. trend` };
+    put("c-season", { type: "bar", data: { labels: months, datasets: [{ data: H.seasonal, backgroundColor: H.seasonal.map(v => v >= 0 ? css("--s1") : css("--soft")), borderRadius: 4, maxBarThickness: 34 }] }, options: o });
+  }
+
+  // clusters
+  function drawClusters() {
+    const ds = clusterInfo.map((ci, k) => ({
+      label: ci.name, pointStyle: ci.shape,
+      data: H.metros.filter(m => m.c === k && m.covid != null).map(m => ({ x: m.covid, y: m.vol, n: m.n })),
+      backgroundColor: css(seriesColors[k]), borderColor: css("--panel"), borderWidth: 1, pointRadius: 4, pointHoverRadius: 6,
+    }));
+    const o = base({ interaction: { mode: "nearest", intersect: true } });
+    o.plugins.legend = { display: true, position: "top", align: "start", labels: { color: css("--ink-2"), usePointStyle: true, boxWidth: 8 } };
+    o.scales.x.grid = { color: css("--line") };
+    o.scales.x.title = { display: true, text: "Growth since March 2020 (%)", color: css("--ink-2") };
+    o.scales.y.title = { display: true, text: "Volatility (std. dev. of value)", color: css("--ink-2") };
+    o.scales.y.ticks.callback = v => kmoney(v);
+    o.plugins.tooltip.callbacks = { label: c => `${c.raw.n}: ${pct(c.raw.x)}, volatility ${kmoney(c.raw.y)}` };
+    put("c-clusters", { type: "scatter", data: { datasets: ds }, options: o });
+    document.getElementById("t-clusters").innerHTML =
+      "<thead><tr><th scope='col'>Cluster</th><th scope='col'>Metros</th><th scope='col'>Growth</th><th scope='col'>Volatility</th><th scope='col'>Avg. value</th></tr></thead><tbody>" +
+      H.clusters.map(c => `<tr><td><span class="swatch" style="background:var(${seriesColors[c.c]})"></span>${clusterInfo[c.c].name}</td><td>${c.metros}</td><td>${pct(c.growth)}</td><td>${kmoney(c.volatility)}</td><td>${kmoney(c.avg)}</td></tr>`).join("") + "</tbody>";
+  }
+
+  // states
+  document.getElementById("state-sub").textContent = `Median typical home value across each state's metros, ${H.latest}`;
+  const maxState = H.states[0][1];
+  document.getElementById("t-states").innerHTML = "<thead><tr><th scope='col'>State</th><th scope='col'>Median value</th><th scope='col' style='width:45%'></th></tr></thead><tbody>" +
+    H.states.map(([s, v]) => `<tr><td>${s}</td><td>${money(v)}</td><td><div style="height:8px;border-radius:4px;background:var(--s1);width:${(v / maxState * 100).toFixed(1)}%"></div></td></tr>`).join("") + "</tbody>";
+
+  function drawAll() { Chart.defaults.font.family = css("--font-body"); drawExplorer(); drawCovid(); drawSeason(); drawClusters(); }
+  drawAll();
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll);
+  new MutationObserver(drawAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>
+</body>
+</html>

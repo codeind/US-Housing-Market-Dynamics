@@ -4,7 +4,7 @@
 
 Graduate research project (Creative Component) for the M.S. in Information Systems at Iowa State University, 2025.
 
-📄 [Full research report (PDF)](docs/Housing_Market_Dynamics_Report.pdf) · 📊 [Tableau workbook](tableau/Zillow_Housing_Analysis.twbx) · 🎤 [Presentation](docs/MIS599_Presentation.pptx)
+🌐 **[Live dashboard](https://codeind.github.io/US-Housing-Market-Dynamics/dashboard/)** · 📄 [Full research report (PDF)](docs/Housing_Market_Dynamics_Report.pdf) · 📊 [Tableau workbook](tableau/Zillow_Housing_Analysis.twbx) · 🎤 [Presentation](docs/MIS599_Presentation.pptx)
 
 ---
 
@@ -25,6 +25,14 @@ Graduate research project (Creative Component) for the M.S. in Information Syste
 - Prices **peak between May and July** in most metros and dip in November–December.
 - **Ottumwa, IA** had the strongest post-COVID recovery among the Iowa metros compared: **46.26%** (Mar 2020 – Mar 2024).
 - Clustering and anomaly detection highlight markets that may be vulnerable to a correction.
+
+---
+
+## Live dashboard
+
+**[Open the interactive dashboard](https://codeind.github.io/US-Housing-Market-Dynamics/dashboard/)** to compare any metros, rank post-COVID growth by state, and explore seasonality, market clusters and state home values. It is built from this repository's data files.
+
+[![Dashboard preview](images/dashboard.png)](https://codeind.github.io/US-Housing-Market-Dynamics/dashboard/)
 
 ---
 
@@ -99,7 +107,7 @@ cd notebooks
 jupyter notebook
 ```
 
-Run the notebooks in order. Notebook 01 rebuilds `data/reshaped_zillow.csv` from the raw file. Notebook 02 writes `data/prepared_ml_zillow_data.csv` before using it (a zipped copy is included). The Tableau workbook opens in Tableau Desktop or the free Tableau Public app.
+Run the notebooks in order. Notebook 01 rebuilds `data/reshaped_zillow.csv` from the raw file. Notebook 02 writes `data/prepared_ml_zillow_data.csv` before using it (a zipped copy is included). The Tableau workbook opens in Tableau Desktop or the free Tableau Public app. To rebuild the web dashboard's data after changing `data/`, run `python dashboard/build_data.py` from the repository root.
 
 ## Repository structure
 
@@ -114,6 +122,7 @@ Run the notebooks in order. Notebook 01 rebuilds `data/reshaped_zillow.csv` from
 │   ├── 02_forecasting_and_ml.ipynb      Prophet, Random Forest, clustering, anomalies
 │   └── 03_model_evaluation.ipynb        leak-free, time-based evaluation
 ├── tableau/Zillow_Housing_Analysis.twbx 8 dashboards
+├── dashboard/                           interactive web dashboard (GitHub Pages) and its data builder
 ├── images/                              tableau/, forecasts/, models/
 ├── docs/                                research report and presentation
 └── requirements.txt
